@@ -135,4 +135,4 @@ def execute(n):
       scores_writer.writerow(score_row)
       predictions_writer.writerow(prediction_row)
 
-execute(n=4)
+execute(n=2)

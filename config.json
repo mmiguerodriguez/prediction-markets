@@ -1,0 +1,7 @@
+{
+  "n": 2,
+  "delta": 0.01,
+  "deltaQ": 0.05,
+  "scores_file": "results/scores.csv",
+  "predictions_file": "results/predictions.csv"
+}
