@@ -4,10 +4,9 @@ from .rules import calculateScore, f
 
 def simulate(players, q):
   n = len(players)
-  scores = [0] * n
+
   predictions = []
   currentPrediction = 0
-
   for player in players:
     p = player.predict(currentPrediction, players, q)
     predictions.append(p)

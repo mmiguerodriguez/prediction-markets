@@ -5,8 +5,14 @@ import time
 
 from src.rules import calculateScore
 from src.simulation import simulate
-from src.player import PerfectInformationPlayer
+from src.player import *
 from src.utils import equalRules, equalWeights
+
+config = {
+  "n": 4,
+  "delta": 0.01,
+  "deltaQ": 0.05
+}
 
 def execute(config):
   ts = int(time.time())
@@ -17,12 +23,13 @@ def execute(config):
   deltaQ = config["deltaQ"]
   weights = equalWeights(n)
   rules = equalRules(n, "brier")
-  print(f"n = {n}\ndelta = {delta}\ndeltaQ = {deltaQ}\nweights = {weights}\nrules = {rules}")
+  print(f"n = {n}\ndelta = {delta}\ndeltaQ = {deltaQ}")
 
   qValues = np.arange(0, 1 + deltaQ, deltaQ).round(2).tolist()
-  predictionValues = np.arange(0, 1 + delta, delta).round(2).tolist()
+  possiblePredictions = np.arange(0, 1 + delta, delta).round(2).tolist()
 
-  players = [PerfectInformationPlayer(i, weights[i], rules[i], predictionValues) for i in range(n)]
+  players = [BruteForcePlayer(i, weights[i], rules[i], possiblePredictions) for i in range(n)]
+  print(f"players = {', '.join([f'{player.__class__.__name__} ({player.rule}) ({player.weight})' for player in players])}")
 
   with open(f"results/scores-{n}-{delta}-{deltaQ}-{ts}.csv", "w", newline='') as scores_file, open(f"results/predictions-{n}-{delta}-{deltaQ}-{ts}.csv", "w", newline='') as predictions_file:
     scores_writer = csv.writer(scores_file)
@@ -43,7 +50,7 @@ def execute(config):
       predictions_writer.writerow(prediction_row)
 
 if __name__ == "__main__":
-  with open("config.json", "r") as config_file:
-    config = json.load(config_file)
+  # with open("config.json", "r") as config_file:
+  #   config = json.load(config_file)
   
   execute(config)

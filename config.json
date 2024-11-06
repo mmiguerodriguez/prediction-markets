@@ -1,5 +1,5 @@
 {
-  "n": 2,
+  "n": 5,
   "delta": 0.01,
   "deltaQ": 0.05,
   "scores_file": "results/scores.csv",
