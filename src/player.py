@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
+import math
 import random
 
 from .rules import calculateScore, f
 class Player(ABC):
-  def __init__(self, index, weight, rule, expectedProbabilityValues):
+  def __init__(self, index, weight, rule, possiblePredictions):
     self.index = index
     self.weight = weight
     self.rule = rule
-    self.expectedProbabilityValues = expectedProbabilityValues
+    self.possiblePredictions = possiblePredictions
 
   @abstractmethod
   def predict(self, currentPrediction, players, q):
@@ -15,16 +16,24 @@ class Player(ABC):
 
 # Implementation of Tomas Schitter PerfectInformationPlayer
 class PerfectInformationPlayer(Player):
-  def predict(self, currentPrediction, players, q):
+  def getCurrentPrediction(self, players, predictions):
+    if self.index == 0:
+      return 0
+
+    result = sum(predictions[i] * players[i].weight for i in range(self.index))
+    return result
+
+  def predict(self, players, predictions, q):
     n = len(players)
+    _predictions = predictions.copy()
+    bestPrediction = 0
 
     if self.index == n - 1:
-      prediction = 0
-      bestPrediction = 0
+      currentPrediction = self.getCurrentPrediction(players, _predictions)
       maxScore = calculateScore(0, f(currentPrediction, q), self.rule)
 
-      for _prediction in self.possiblePredictions:
-        prediction = float(_prediction)
+      for prediction in self.possiblePredictions:
+        _predictions[self.index] = prediction
         finalPrediction = currentPrediction + (self.weight * prediction)
         currentScore = calculateScore(prediction, f(finalPrediction, q), self.rule)
 
@@ -34,20 +43,16 @@ class PerfectInformationPlayer(Player):
 
       return bestPrediction
     else:
-      prediction = 0
-      finalPrediction = currentPrediction
+      currentPrediction = self.getCurrentPrediction(players, _predictions)
+      maxScore = calculateScore(0, f(currentPrediction, q), self.rule)
 
-      for j in range(self.index + 1, n):
-        finalPrediction += players[j].predict(finalPrediction, players, q) * players[j].weight
-
-      maxScore = calculateScore(0, f(finalPrediction, q), self.rule)
-      bestPrediction = 0
-
-      for _prediction in self.possiblePredictions:
-        prediction = float(_prediction)
+      for prediction in self.possiblePredictions:
+        _predictions[self.index] = prediction
         finalPrediction = currentPrediction + (self.weight * prediction)
+
         for j in range(self.index + 1, n):
-          finalPrediction += players[j].predict(finalPrediction, players, q) * players[j].weight
+          otherPrediction = players[j].predict(players, _predictions, q) * players[j].weight
+          finalPrediction += otherPrediction
 
         currentScore = calculateScore(prediction, f(finalPrediction, q), self.rule)
 
@@ -57,17 +62,22 @@ class PerfectInformationPlayer(Player):
 
       return bestPrediction
 
-class BruteForcePlayer(Player):
-  def predict(self, currentPrediction, players, q):
+class NaivePlayer(Player):
+  def getCurrentPrediction(self, players, predictions):
+    if self.index == 0:
+      return 0
+    
+    result = sum(predictions[i] * players[i].weight for i in range(self.index))
+    return result
+
+  def predict(self, players, predictions, q):
     n = len(players)
     bestPrediction = 0
-    maxScore = -float('inf')
+    maxScore = -math.inf
 
-    for _prediction in self.expectedProbabilityValues:
-      prediction = float(_prediction)
-      finalPrediction = currentPrediction + (self.weight * prediction)
+    for prediction in self.possiblePredictions:
+      finalPrediction = self.getCurrentPrediction(players, predictions) + (self.weight * prediction)
 
-      # Assume other players (after me) have the same belief
       for j in range(self.index + 1, n):
         finalPrediction += players[j].weight * prediction
 
@@ -79,23 +89,23 @@ class BruteForcePlayer(Player):
 
     return bestPrediction
 
-class RandomPredictionPlayer(Player):
-  def predict(self, currentPrediction, players, q):
-    return random.choice(self.expectedProbabilityValues)
+# class RandomPredictionPlayer(Player):
+#   def predict(self, currentPrediction, players, q):
+#     return random.choice(self.possiblePredictions)
 
-class ConservativePlayer(Player):
-  def predict(self, currentPrediction, players, q):
-    return min(self.expectedProbabilityValues, key=lambda x: abs(x - currentPrediction))
+# class ConservativePlayer(Player):
+#   def predict(self, currentPrediction, players, q):
+#     return min(self.possiblePredictions, key=lambda x: abs(x - currentPrediction))
 
-class AggressivePlayer(Player):
-  def predict(self, currentPrediction, players, q):
-    return max(self.expectedProbabilityValues) if random.random() > 0.5 else min(self.expectedProbabilityValues)
+# class AggressivePlayer(Player):
+#   def predict(self, currentPrediction, players, q):
+#     return max(self.possiblePredictions) if random.random() > 0.5 else min(self.possiblePredictions)
 
-class TrendFollowingPlayer(Player):
-  def predict(self, currentPrediction, players, q):
-    if self.index == 0:
-      return random.choice(self.expectedProbabilityValues)
+# class TrendFollowingPlayer(Player):
+#   def predict(self, currentPrediction, players, q):
+#     if self.index == 0:
+#       return random.choice(self.possiblePredictions)
 
-    previous_prediction = players[self.index - 1].predict(currentPrediction, players, q)
-    trend = previous_prediction - currentPrediction
-    return min(self.expectedProbabilityValues, key=lambda x: abs(x - (currentPrediction + trend)))
+#     previous_prediction = players[self.index - 1].predict(currentPrediction, players, q)
+#     trend = previous_prediction - currentPrediction
+#     return min(self.possiblePredictions, key=lambda x: abs(x - (currentPrediction + trend)))

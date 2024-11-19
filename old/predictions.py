@@ -48,8 +48,7 @@ def calculateBestPrediction(i, currentPrediction, weights, rules, N, q, predicti
     bestPrediction = 0
     maxScore = calculateScore(0, f(currentPrediction, q), rules[i])
 
-    for _prediction in predictionValues:
-      prediction = float(_prediction)
+    for prediction in predictionValues:
       finalPrediction = currentPrediction + (weights[i] * prediction)
       currentScore = calculateScore(prediction, f(finalPrediction, q), rules[i])
 
@@ -69,8 +68,7 @@ def calculateBestPrediction(i, currentPrediction, weights, rules, N, q, predicti
     maxScore = calculateScore(0, f(finalPrediction, q), rules[i])
     bestPrediction = 0
 
-    for _prediction in predictionValues:
-      prediction = float(_prediction)
+    for prediction in predictionValues:
       finalPrediction = currentPrediction + (weights[i] * prediction)
       for j in range (i + 1, N):
         finalPrediction += calculateBestPrediction(j, finalPrediction, weights, rules, N, q, predictionValues) * weights[j]
