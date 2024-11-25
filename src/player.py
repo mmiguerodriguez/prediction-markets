@@ -4,14 +4,15 @@ import random
 
 from .rules import calculateScore, f
 class Player(ABC):
-  def __init__(self, index, weight, rule, possiblePredictions):
+  def __init__(self, index, weight, rule, p, possiblePredictions):
     self.index = index
     self.weight = weight
     self.rule = rule
+    self.p = p
     self.possiblePredictions = possiblePredictions
 
   @abstractmethod
-  def predict(self, currentPrediction, players, q):
+  def predict(self, players, predictions):
     pass
 
 # Implementation of Tomas Schitter PerfectInformationPlayer
@@ -23,19 +24,19 @@ class PerfectInformationPlayer(Player):
     result = sum(predictions[i] * players[i].weight for i in range(self.index))
     return result
 
-  def predict(self, players, predictions, q):
+  def predict(self, players, predictions):
     n = len(players)
     _predictions = predictions.copy()
     bestPrediction = 0
 
     if self.index == n - 1:
       currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, q), self.rule)
+      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
       for prediction in self.possiblePredictions:
         _predictions[self.index] = prediction
         finalPrediction = currentPrediction + (self.weight * prediction)
-        currentScore = calculateScore(prediction, f(finalPrediction, q), self.rule)
+        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
         if currentScore > maxScore:
           maxScore = currentScore
@@ -44,17 +45,17 @@ class PerfectInformationPlayer(Player):
       return bestPrediction
     else:
       currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, q), self.rule)
+      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
       for prediction in self.possiblePredictions:
         _predictions[self.index] = prediction
         finalPrediction = currentPrediction + (self.weight * prediction)
 
         for j in range(self.index + 1, n):
-          otherPrediction = players[j].predict(players, _predictions, q) * players[j].weight
+          otherPrediction = players[j].predict(players, _predictions) * players[j].weight
           finalPrediction += otherPrediction
 
-        currentScore = calculateScore(prediction, f(finalPrediction, q), self.rule)
+        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
         if currentScore > maxScore:
           maxScore = currentScore

@@ -1,14 +1,10 @@
-import numpy as np
-import math
-
-from .player import PerfectInformationPlayer
 from .rules import calculateScore, f
 
 def simulate(players, q):
   predictions = [0 for _ in range(len(players))]
 
   for player in players:
-    p = player.predict(players, predictions.copy(), q)
+    p = player.predict(players, predictions.copy())
     predictions[player.index] = p
 
   marketPrediction = sum(player.weight * predictions[i] for i, player in enumerate(players))
