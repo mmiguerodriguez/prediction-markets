@@ -6,8 +6,8 @@ class CSVResultHandler:
     self.delta = delta
     self.deltaQ = deltaQ
     self.ts = ts
-    self.scores_file = f"results/{n}-{delta}-{deltaQ}-{ts}-scores.csv"
-    self.predictions_file = f"results/{n}-{delta}-{deltaQ}-{ts}-predictions.csv"
+    self.scores_file = f"results/{ts}-{n}-{delta}-{deltaQ}-scores.csv"
+    self.predictions_file = f"results/{ts}-{n}-{delta}-{deltaQ}-predictions.csv"
 
   def write_headers(self):
     with open(self.scores_file, "w", newline='') as scores_file, open(self.predictions_file, "w", newline='') as predictions_file:

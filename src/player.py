@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import math
-import random
+import numpy as np
 
 from .rules import calculateScore, f
 class Player(ABC):
@@ -63,6 +63,7 @@ class PerfectInformationPlayer(Player):
 
       return bestPrediction
 
+# Implementation of NaivePlayer
 class NaivePlayer(Player):
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
@@ -90,23 +91,68 @@ class NaivePlayer(Player):
 
     return bestPrediction
 
-# class RandomPredictionPlayer(Player):
-#   def predict(self, currentPrediction, players, q):
-#     return random.choice(self.possiblePredictions)
+# Implementation of PerfectInformationPlayer modified
+class RelaxedInformationPlayer(Player):
+  def getCurrentPrediction(self, players, predictions):
+    if self.index == 0:
+      return 0
 
-# class ConservativePlayer(Player):
-#   def predict(self, currentPrediction, players, q):
-#     return min(self.possiblePredictions, key=lambda x: abs(x - currentPrediction))
+    result = sum(predictions[i] * players[i].weight for i in range(self.index))
+    return result
 
-# class AggressivePlayer(Player):
-#   def predict(self, currentPrediction, players, q):
-#     return max(self.possiblePredictions) if random.random() > 0.5 else min(self.possiblePredictions)
+  def getSubsetWithinRadius(self, radius):
+    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
 
-# class TrendFollowingPlayer(Player):
-#   def predict(self, currentPrediction, players, q):
-#     if self.index == 0:
-#       return random.choice(self.possiblePredictions)
+    start_index = max(0, closest_index - radius)
+    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
 
-#     previous_prediction = players[self.index - 1].predict(currentPrediction, players, q)
-#     trend = previous_prediction - currentPrediction
-#     return min(self.possiblePredictions, key=lambda x: abs(x - (currentPrediction + trend)))
+    subset = self.possiblePredictions[start_index:end_index]
+
+    return subset
+
+  def predict(self, players, predictions, top_level=True):
+    n = len(players)
+    _predictions = predictions.copy()
+    bestPrediction = 0
+
+    if self.index == n - 1:
+      currentPrediction = self.getCurrentPrediction(players, _predictions)
+      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
+
+      possiblePredictions = self.possiblePredictions
+      if not top_level:
+        possiblePredictions = self.getSubsetWithinRadius(2)
+
+      for prediction in possiblePredictions:
+        _predictions[self.index] = prediction
+        finalPrediction = currentPrediction + (self.weight * prediction)
+        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+
+        if currentScore > maxScore:
+          maxScore = currentScore
+          bestPrediction = prediction
+
+      return bestPrediction
+    else:
+      currentPrediction = self.getCurrentPrediction(players, _predictions)
+      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
+
+      possiblePredictions = self.possiblePredictions
+      if not top_level:
+        possiblePredictions = self.getSubsetWithinRadius(2)
+      
+      for prediction in possiblePredictions:
+        _predictions[self.index] = prediction
+        finalPrediction = currentPrediction + (self.weight * prediction)
+
+        for j in range(self.index + 1, n):
+          otherPrediction = players[j].predict(players, _predictions, top_level=False) * players[j].weight
+          finalPrediction += otherPrediction
+
+        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+
+        if currentScore > maxScore:
+          maxScore = currentScore
+          bestPrediction = prediction
+
+      return bestPrediction
