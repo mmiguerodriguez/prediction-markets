@@ -1,13 +1,10 @@
 import csv
 
 class CSVResultHandler:
-  def __init__(self, n, delta, deltaQ, ts):
+  def __init__(self, filename, n):
     self.n = n
-    self.delta = delta
-    self.deltaQ = deltaQ
-    self.ts = ts
-    self.scores_file = f"results/{ts}-{n}-{delta}-{deltaQ}-scores.csv"
-    self.predictions_file = f"results/{ts}-{n}-{delta}-{deltaQ}-predictions.csv"
+    self.scores_file = f"results/{filename}-scores.csv"
+    self.predictions_file = f"results/{filename}-predictions.csv"
 
   def write_headers(self):
     with open(self.scores_file, "w", newline='') as scores_file, open(self.predictions_file, "w", newline='') as predictions_file:
