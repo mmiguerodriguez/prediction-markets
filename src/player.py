@@ -16,6 +16,8 @@ class Player(ABC):
     pass
 
 # Implementation of Tomas Schitter PerfectInformationPlayer
+# Assumes that all players have perfect information about the other players' predictions
+# and that they know the true final probability
 class PerfectInformationPlayer(Player):
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
@@ -63,11 +65,14 @@ class PerfectInformationPlayer(Player):
 
       return bestPrediction
 
-# Implementation of PerfectInformationPlayer modified
+# Implementation of a modified PerfectInformationPlayer
+# Assumes all players predict within a certain radius of their p
+# Doesn't have assumptions regarding if our p is the real one or not
 class RelaxedInformationPlayer(Player):
   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
     super().__init__(index, weight, rule, p, possiblePredictions)
     self.subset = self.getSubsetWithinRadius(radius)
+    print(self.subset)
 
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
@@ -76,6 +81,9 @@ class RelaxedInformationPlayer(Player):
     result = sum(predictions[i] * players[i].weight for i in range(self.index))
     return result
 
+  # Get a subset of possible predictions within a radius of the current p
+  # Example: p = 0.4, radius = 1
+  # Returns: [0.39, 0.4, 0.41]
   def getSubsetWithinRadius(self, radius):
     closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
 
@@ -201,3 +209,6 @@ class AverageCalculationPlayer(Player):
           bestPrediction = prediction
 
       return bestPrediction
+    
+# Remove assumptions
+# Make the model look more like a real scenario

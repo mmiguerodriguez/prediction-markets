@@ -1,5 +1,17 @@
 import numpy as np
 
+def get_noisy_q(q, noiseFn, epsilon):
+  if noiseFn == "gaussian":
+    return add_gaussian_noise(q, epsilon)
+  elif noiseFn == "uniform":
+    return add_uniform_noise(q, epsilon)
+  elif noiseFn == "sinusoidal":
+    return add_sinusoidal_noise(q, epsilon)
+  elif noiseFn == "exponential":
+    return add_exponential_noise(q, epsilon)
+  else:
+    return identity(q)
+
 def identity(q):
   return q
 
@@ -9,7 +21,7 @@ def add_gaussian_noise(q, epsilon):
   """
   noise = np.random.normal(0, epsilon)
   noisy_q = q + noise
-  return np.clip(noisy_q, 0, 1).round(2)
+  return float(np.clip(noisy_q, 0, 1).round(2))
 
 def add_uniform_noise(q, epsilon):
   """
@@ -17,7 +29,7 @@ def add_uniform_noise(q, epsilon):
   """
   noise = np.random.uniform(-epsilon, epsilon)
   noisy_q = q + noise
-  return np.clip(noisy_q, 0, 1).round(2)
+  return float(np.clip(noisy_q, 0, 1).round(2))
 
 def add_sinusoidal_noise(q, epsilon, frequency=1.0):
   """
@@ -25,7 +37,7 @@ def add_sinusoidal_noise(q, epsilon, frequency=1.0):
   """
   noise = epsilon * np.sin(2 * np.pi * frequency * q)
   noisy_q = q + noise
-  return np.clip(noisy_q, 0, 1).round(2)
+  return float(np.clip(noisy_q, 0, 1).round(2))
 
 def add_exponential_noise(q, epsilon):
   """
@@ -33,7 +45,7 @@ def add_exponential_noise(q, epsilon):
   """
   noise = np.random.exponential(epsilon)
   noisy_q = q + noise
-  return np.clip(noisy_q, 0, 1).round(2)
+  return float(np.clip(noisy_q, 0, 1).round(2))
 
 # Example usage
 # q = 0.5
