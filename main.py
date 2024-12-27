@@ -6,7 +6,7 @@ from src.rules import calculateScore
 from src.simulation import simulate
 from src.player import *
 from src.utils import equalRules, equalWeights
-from src.results import CSVResultHandler
+from src.results import JSONResultHandler
 from src.noise import *
 
 config = {
@@ -16,7 +16,7 @@ config = {
 }
 
 def execute(config):
-  # ts = int(time.time())
+  ts = int(time.time())
 
   n = config["n"]
   delta = config["delta"]
@@ -32,13 +32,18 @@ def execute(config):
   qValues = np.arange(0, 1 + deltaQ, deltaQ).round(2).tolist()
   possiblePredictions = np.arange(0, 1 + delta, delta).round(2).tolist()
 
-  filename = f"{player_type}-{n}-{delta}-{deltaQ}"
-  result_handler = CSVResultHandler(filename, n)
-  result_handler.write_headers()
+  json_result_handler = JSONResultHandler(ts)
 
   print(f"Executing simulation...")
   print(f"n = {n}; players = {player_type}; weights = {weights}; rules = {rules}; delta = {delta}; deltaQ = {deltaQ}")
+  print(f"noise_function = {noise_function}; noise_delta = {noise_delta};")
 
+  # store score predictions finalprediction and marketprediction list
+  scoresList = []
+  predictionsList = []
+  finalPredictionList = []
+  marketPredictionList = []
+  scoreList = []
   for q in qValues:
     players = []
 
@@ -53,7 +58,15 @@ def execute(config):
     print("Simulation step", [player.p for player in players])
 
     scores, predictions, finalPrediction, marketPrediction = simulate(players, q)
-    result_handler.write_results(q, scores, predictions, finalPrediction, marketPrediction, calculateScore(marketPrediction, finalPrediction, "brier"))
+    score = calculateScore(marketPrediction, finalPrediction, "brier")
+
+    scoresList.append(scores)
+    predictionsList.append(predictions)
+    finalPredictionList.append(finalPrediction)
+    marketPredictionList.append(marketPrediction)
+    scoreList.append(score)
+
+  json_result_handler.write_results(config, scoresList, predictionsList, finalPredictionList, marketPredictionList, scoreList)
 
 if __name__ == "__main__":
   # with open("config.json", "r") as config_file:

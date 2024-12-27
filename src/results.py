@@ -1,4 +1,5 @@
 import csv
+import json
 
 class CSVResultHandler:
   def __init__(self, filename, n):
@@ -26,3 +27,21 @@ class CSVResultHandler:
 
       scores_writer.writerow(score_row)
       predictions_writer.writerow(prediction_row)
+
+class JSONResultHandler:
+  def __init__(self, filename):
+    self.filename = f"results/{filename}.json"
+
+  def write_results(self, config, scores, predictions, finalPrediction, marketPrediction, score):
+    results = {
+      "config": config,
+      "scores": scores,
+      "predictions": predictions,
+      "finalPrediction": finalPrediction,
+      "marketPrediction": marketPrediction,
+      "score": score
+    }
+        
+    with open(self.filename, 'w') as json_file:
+      json.dump(results, json_file, indent=2)
+
