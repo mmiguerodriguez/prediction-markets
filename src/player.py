@@ -163,13 +163,28 @@ que los jugadores tengan una creencia de un rango en el que puedan estar todos
 Experimento 2:
 La mismo estrategia, utilizando la regla logarítmica
 """
-class AverageCalculationPlayer(Player):
+class MovingRangePlayer(Player):
+  def __init__(self, index, weight, rule, p, possiblePredictions, radius):
+    super().__init__(index, weight, rule, p, possiblePredictions)
+    self.subset = self.getSubsetWithinRadius(radius)
+    print("pp", possiblePredictions)
+
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
       return 0
 
     result = sum(predictions[i] * players[i].weight for i in range(self.index))
     return result
+
+  def getSubsetWithinRadius(self, radius):
+    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
+
+    start_index = max(0, closest_index - radius)
+    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
+
+    subset = self.possiblePredictions[start_index:end_index]
+
+    return subset
 
   def predict(self, players, predictions):
     n = len(players)
@@ -180,14 +195,15 @@ class AverageCalculationPlayer(Player):
       currentPrediction = self.getCurrentPrediction(players, _predictions)
       maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
-      for prediction in self.possiblePredictions:
-        _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+      for subsetElem in self.subset:
+        for prediction in self.possiblePredictions:
+          _predictions[self.index] = prediction
+          finalPrediction = currentPrediction + (self.weight * prediction)
+          currentScore = calculateScore(prediction, f(finalPrediction, subsetElem), self.rule)
 
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
+          if currentScore > maxScore:
+            maxScore = currentScore
+            bestPrediction = prediction
 
       return bestPrediction
     else:
@@ -196,19 +212,18 @@ class AverageCalculationPlayer(Player):
 
       for prediction in self.possiblePredictions:
         _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
+        for subsetElem in self.subset:
+          finalPrediction = currentPrediction + (self.weight * prediction)
+          for j in range(self.index + 1, n):
+            jPred = players[j].predict(players, _predictions)
+            otherPrediction = jPred * players[j].weight
+            finalPrediction += otherPrediction
 
-        for j in range(self.index + 1, n):
-          otherPrediction = players[j].predict(players, _predictions) * players[j].weight
-          finalPrediction += otherPrediction
+          currentScore = calculateScore(prediction, f(finalPrediction, subsetElem), self.rule)
+          #print(f"finalPrediction: {finalPrediction:.3f}; currentScore: {currentScore:.3f}")
 
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
-
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
+          if currentScore > maxScore:
+            maxScore = currentScore
+            bestPrediction = prediction
 
       return bestPrediction
-    
-# Remove assumptions
-# Make the model look more like a real scenario

@@ -8,10 +8,10 @@ def logRule(p, q):
     return -math.inf
   elif (q == p and (q == 0 or q == 1)):
     return 0
-  return round((q * np.log(p) + (1 - q) * np.log((1 - p))), 4)
+  return round((q * np.log(p) + (1 - q) * np.log(1 - p)), 4)
 
 def brierRule(p, q):
-  return -(q * ((1 - p) ** 2) + (1 - q) * (p ** 2))
+  return -(q * ((p - 1) ** 2) + (1 - q) * (p ** 2))
 
 def quadraticError(p, q):
   return -((p - q) ** 2)
@@ -19,10 +19,10 @@ def quadraticError(p, q):
 def f(p, q):
   return round((c * p + (1 - c) * q), 2)
 
-def calculateScore(p_i, realFinalProbability, rule):
+def calculateScore(p_i, q, rule):
   if rule == "log":
-    return logRule(p_i, realFinalProbability)
+    return logRule(p_i, q)
   elif rule == "brier":
-    return brierRule(p_i, realFinalProbability)
+    return brierRule(p_i, q)
   else:
-    return quadraticError(p_i, realFinalProbability)
+    return quadraticError(p_i, q)

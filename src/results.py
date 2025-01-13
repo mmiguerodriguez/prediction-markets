@@ -43,5 +43,5 @@ class JSONResultHandler:
     }
         
     with open(self.filename, 'w') as json_file:
-      json.dump(results, json_file, indent=2)
+      json.dump(results, json_file)
 

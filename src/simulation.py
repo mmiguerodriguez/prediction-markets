@@ -4,8 +4,10 @@ def simulate(players, q):
   predictions = [0 for _ in range(len(players))]
 
   for player in players:
-    p = player.predict(players, predictions.copy())
+    p = player.predict(players, predictions.copy()) #, q)
     predictions[player.index] = p
+
+  print(f"q: {q}; predictions: {predictions}")
 
   marketPrediction = sum(player.weight * predictions[i] for i, player in enumerate(players))
   finalPrediction = f(marketPrediction, q)
