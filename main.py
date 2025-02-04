@@ -10,7 +10,6 @@ from src.results import JSONResultHandler
 from src.noise import *
 
 config = {
-  "n": 4,
   "delta": 0.01,
   "deltaQ": 0.05
 }
@@ -25,11 +24,15 @@ def execute(config):
   noise_function = config["noise_function"]
   noise_delta = config["noise_delta"]
   
-  # Should we add a config for weights, rules?
+  # Should we add a config for weights, rules? Yes we should
   weights = equalWeights(n)
-  rules = equalRules(n, "brier")
+  rule = "brier" # ["log", "brier", "quadratic"]
+  rules = equalRules(n, rule)
+
+  config["rules"] = rules
 
   q_values = np.arange(0, 1 + deltaQ, deltaQ).round(2).tolist()
+  #q_values = [0.1]
   possible_predictions = np.arange(0, 1 + delta, delta).round(2).tolist()
 
   json_result_handler = JSONResultHandler(filename)
@@ -44,6 +47,7 @@ def execute(config):
   market_prediction_results = []
   score_results = []
 
+  ps = []
   for q in q_values:
     players = []
 
@@ -57,7 +61,7 @@ def execute(config):
     elif player_type == "moving_range":
       players = [MovingRangePlayer(i, weights[i], rules[i], get_noisy_q(q, noise_function, noise_delta), possible_predictions, radius) for i in range(n)]
 
-    print("p:", [player.p for player in players])
+    ps.append([player.p for player in players])
 
     scores, predictions, final_prediction, market_prediction = simulate(players, q)
     score = calculateScore(market_prediction, final_prediction, "brier")
@@ -67,6 +71,8 @@ def execute(config):
     final_prediction_results.append(final_prediction)
     market_prediction_results.append(market_prediction)
     score_results.append(score)
+
+  config["ps"] = ps
 
   json_result_handler.write_results(config, scores_results, predictions_results, final_prediction_results, market_prediction_results, score_results)
 

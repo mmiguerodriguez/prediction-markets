@@ -19,6 +19,9 @@ class Player(ABC):
 # Assumes that all players have perfect information about the other players' predictions
 # and that they know the true final probability
 class PerfectInformationPlayer(Player):
+  def __init__(self, index, weight, rule, p, possiblePredictions):
+    super().__init__(index, weight, rule, p, possiblePredictions)
+
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
       return 0
@@ -31,39 +34,25 @@ class PerfectInformationPlayer(Player):
     _predictions = predictions.copy()
     bestPrediction = 0
 
-    if self.index == n - 1:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
+    currentPrediction = self.getCurrentPrediction(players, _predictions)
+    maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
-      for prediction in self.possiblePredictions:
-        _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+    for prediction in self.possiblePredictions:
+      _predictions[self.index] = prediction
+      finalPrediction = currentPrediction + (self.weight * prediction)
 
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
-
-      return bestPrediction
-    else:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
-
-      for prediction in self.possiblePredictions:
-        _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
-
+      if self.index != n - 1:
         for j in range(self.index + 1, n):
           otherPrediction = players[j].predict(players, _predictions) * players[j].weight
           finalPrediction += otherPrediction
 
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+      currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
+      if currentScore > maxScore:
+        maxScore = currentScore
+        bestPrediction = prediction
 
-      return bestPrediction
+    return bestPrediction
 
 # Implementation of a modified PerfectInformationPlayer
 # Assumes all players predict within a certain radius of their p
@@ -163,11 +152,11 @@ que los jugadores tengan una creencia de un rango en el que puedan estar todos
 Experimento 2:
 La mismo estrategia, utilizando la regla logarítmica
 """
+
 class MovingRangePlayer(Player):
   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
     super().__init__(index, weight, rule, p, possiblePredictions)
     self.subset = self.getSubsetWithinRadius(radius)
-    print("pp", possiblePredictions)
 
   def getCurrentPrediction(self, players, predictions):
     if self.index == 0:
@@ -191,39 +180,38 @@ class MovingRangePlayer(Player):
     _predictions = predictions.copy()
     bestPrediction = 0
 
-    if self.index == n - 1:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
+    currentPrediction = self.getCurrentPrediction(players, _predictions)
+    maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
-      for subsetElem in self.subset:
-        for prediction in self.possiblePredictions:
-          _predictions[self.index] = prediction
-          finalPrediction = currentPrediction + (self.weight * prediction)
-          currentScore = calculateScore(prediction, f(finalPrediction, subsetElem), self.rule)
+    maxSubsetElemPerPrediction = {}
+    for prediction in self.possiblePredictions:
+      _predictions[self.index] = prediction
+      finalPrediction = currentPrediction + (self.weight * prediction)
 
-          if currentScore > maxScore:
-            maxScore = currentScore
-            bestPrediction = prediction
-
-      return bestPrediction
-    else:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
-
-      for prediction in self.possiblePredictions:
-        _predictions[self.index] = prediction
+      if self.index != n - 1:
+        scores = {}
         for subsetElem in self.subset:
-          finalPrediction = currentPrediction + (self.weight * prediction)
           for j in range(self.index + 1, n):
-            jPred = players[j].predict(players, _predictions)
-            otherPrediction = jPred * players[j].weight
+            original_p = players[j].p
+            players[j].p = subsetElem 
+            otherPrediction = players[j].predict(players, _predictions) * players[j].weight
             finalPrediction += otherPrediction
+            players[j].p = original_p
+          
+          scores[subsetElem] = calculateScore(subsetElem, f(finalPrediction, self.p), self.rule)
 
-          currentScore = calculateScore(prediction, f(finalPrediction, subsetElem), self.rule)
-          #print(f"finalPrediction: {finalPrediction:.3f}; currentScore: {currentScore:.3f}")
+        maxSubsetElem = max(scores, key=scores.get)
+        currentScore = scores[maxSubsetElem]
+        maxSubsetElemPerPrediction[prediction] = maxSubsetElem
+        # print(f"scores: {scores}; max_elem: {max_subsetElem}")
+      else:
+        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
-          if currentScore > maxScore:
-            maxScore = currentScore
-            bestPrediction = prediction
+      if currentScore > maxScore:
+        maxScore = currentScore
+        bestPrediction = prediction
 
-      return bestPrediction
+    # if self.index != n - 1:
+    #   print(f"max_elem_per_prediction: {maxSubsetElemPerPrediction}")
+
+    return bestPrediction
