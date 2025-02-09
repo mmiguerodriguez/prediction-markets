@@ -54,105 +54,6 @@ class PerfectInformationPlayer(Player):
 
     return bestPrediction
 
-# Implementation of a modified PerfectInformationPlayer
-# Assumes all players predict within a certain radius of their p
-# Doesn't have assumptions regarding if our p is the real one or not
-class RelaxedInformationPlayer(Player):
-  def __init__(self, index, weight, rule, p, possiblePredictions, radius):
-    super().__init__(index, weight, rule, p, possiblePredictions)
-    self.subset = self.getSubsetWithinRadius(radius)
-    print(self.subset)
-
-  def getCurrentPrediction(self, players, predictions):
-    if self.index == 0:
-      return 0
-
-    result = sum(predictions[i] * players[i].weight for i in range(self.index))
-    return result
-
-  # Get a subset of possible predictions within a radius of the current p
-  # Example: p = 0.4, radius = 1
-  # Returns: [0.39, 0.4, 0.41]
-  def getSubsetWithinRadius(self, radius):
-    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
-
-    start_index = max(0, closest_index - radius)
-    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
-
-    subset = self.possiblePredictions[start_index:end_index]
-
-    return subset
-
-  def predict(self, players, predictions, top_level=True):
-    n = len(players)
-    _predictions = predictions.copy()
-    bestPrediction = 0
-
-    if self.index == n - 1:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
-
-      possiblePredictions = self.possiblePredictions
-      if not top_level:
-        possiblePredictions = self.subset
-
-      for prediction in possiblePredictions:
-        _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
-
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
-
-      return bestPrediction
-    else:
-      currentPrediction = self.getCurrentPrediction(players, _predictions)
-      maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
-
-      possiblePredictions = self.possiblePredictions
-      if not top_level:
-        possiblePredictions = self.subset
-      
-      for prediction in possiblePredictions:
-        _predictions[self.index] = prediction
-        finalPrediction = currentPrediction + (self.weight * prediction)
-
-        for j in range(self.index + 1, n):
-          otherPrediction = players[j].predict(players, _predictions, top_level=False) * players[j].weight
-          finalPrediction += otherPrediction
-
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
-
-        if currentScore > maxScore:
-          maxScore = currentScore
-          bestPrediction = prediction
-
-      return bestPrediction
-
-"""
-Cambiar MAXSCORE por:
-Si no todos tienen la probabilidad real
-Asumiendo que el otro va a tener un p (subjetivo) a cierta distancia del mío, hago el promedio
-(asumiendo que esa persona/jugador tiene radio de probabilidad 0.51, 0.5, 0.49)
-calculo el movimiento que va a hacer dentro de ese radio
-variando la creencia
-
-- Creencia: El p del otro está a cierto rango del mio (mirar esas probabilidades)
-- Promediar el puntaje que obtendría tomando la decisión óptima
-
-Experimento:
-Tengo p=0.4. No se que piensa el otro, supongo [0.3, 0.6], asumir que la probabilidad de que
-esté entre esos números es uniforme (puede ser normal). Si doy la predicción de este número, 
-que puntaje obtendría?
-
-No sé cual es la probabilidad subjetiva del siguiente
-que los jugadores tengan una creencia de un rango en el que puedan estar todos
-
-Experimento 2:
-La mismo estrategia, utilizando la regla logarítmica
-"""
-
 class MovingRangePlayer(Player):
   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
     super().__init__(index, weight, rule, p, possiblePredictions)
@@ -183,11 +84,11 @@ class MovingRangePlayer(Player):
     currentPrediction = self.getCurrentPrediction(players, _predictions)
     maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
-    maxSubsetElemPerPrediction = {}
     for prediction in self.possiblePredictions:
       _predictions[self.index] = prediction
       finalPrediction = currentPrediction + (self.weight * prediction)
 
+      currentScore = 0
       if self.index != n - 1:
         scores = {}
         for subsetElem in self.subset:
@@ -198,12 +99,10 @@ class MovingRangePlayer(Player):
             finalPrediction += otherPrediction
             players[j].p = original_p
           
-          scores[subsetElem] = calculateScore(subsetElem, f(finalPrediction, self.p), self.rule)
+          scores[subsetElem] = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
         maxSubsetElem = max(scores, key=scores.get)
         currentScore = scores[maxSubsetElem]
-        maxSubsetElemPerPrediction[prediction] = maxSubsetElem
-        # print(f"scores: {scores}; max_elem: {max_subsetElem}")
       else:
         currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
 
@@ -211,7 +110,8 @@ class MovingRangePlayer(Player):
         maxScore = currentScore
         bestPrediction = prediction
 
-    # if self.index != n - 1:
-    #   print(f"max_elem_per_prediction: {maxSubsetElemPerPrediction}")
-
     return bestPrediction
+
+def printFile(content):
+  with open("out.txt", 'a') as file:
+    file.write(content + '\n')
