@@ -98,6 +98,7 @@ if __name__ == "__main__":
   if not (0.99 <= sum(args.weights) <= 1.01):
     parser.error("The sum of weights must be near 1 (between 0.99 and 1.01)")
 
+  config["date"] = time.strftime("%Y-%m-%d %H:%M:%S")
   config["filename"] = int(time.time())
   config["n"] = args.n
   config["player_type"] = args.player_type

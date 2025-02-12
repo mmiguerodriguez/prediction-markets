@@ -110,6 +110,9 @@ class MovingRangePlayer(Player):
         maxScore = currentScore
         bestPrediction = prediction
 
+      # if self.index == 0:
+      #   print(prediction)
+
     return bestPrediction
 
 def printFile(content):
