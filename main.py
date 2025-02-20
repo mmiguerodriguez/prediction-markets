@@ -14,6 +14,8 @@ config = {
   "deltaQ": 0.05
 }
 
+np.random.seed(42)
+
 def execute(config):
   filename = config["filename"]
   n = config["n"]
@@ -30,7 +32,7 @@ def execute(config):
   config["rules"] = rules
 
   q_values = np.arange(0, 1 + deltaQ, deltaQ).round(2).tolist()
-  #q_values = [0.1]
+  q_values = [0.85] # for debug purposes
   possible_predictions = np.arange(0, 1 + delta, delta).round(2).tolist()
 
   json_result_handler = JSONResultHandler(filename)
