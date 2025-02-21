@@ -32,7 +32,7 @@ def execute(config):
   config["rules"] = rules
 
   q_values = np.arange(0, 1 + deltaQ, deltaQ).round(2).tolist()
-  q_values = [0.85] # for debug purposes
+  # q_values = [0.9] # Debug purposes
   possible_predictions = np.arange(0, 1 + delta, delta).round(2).tolist()
 
   json_result_handler = JSONResultHandler(filename)
@@ -46,6 +46,9 @@ def execute(config):
   final_prediction_results = []
   market_prediction_results = []
   score_results = []
+
+  # override_pos_pred = np.arange(0.85, 1.00, 0.01).round(2).tolist()
+  # override_ps = [0.9, 0.91, 0.89]
 
   ps = []
   for q in q_values:

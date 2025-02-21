@@ -101,11 +101,14 @@ class MovingRangePlayer(Player):
     for prediction in self.possiblePredictions:
       _predictions[self.index] = prediction
       finalPrediction = currentPrediction + (self.weight * prediction)
-
       currentScore = 0
+
       if self.index != n - 1:
         scores = {}
+
         for subsetElem in self.subset:
+          finalPrediction = currentPrediction + (self.weight * prediction) # reset finalPrediction
+
           for j in range(self.index + 1, n):
             original_p = players[j].p
             players[j].p = subsetElem 
@@ -119,9 +122,6 @@ class MovingRangePlayer(Player):
         currentScore = scores[maxSubsetElem]
       else:
         currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
-
-      if self.index == 0:
-        print(prediction, currentScore, maxScore)
 
       if currentScore > maxScore:
         maxScore = currentScore
