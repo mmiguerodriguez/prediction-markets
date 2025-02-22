@@ -58,6 +58,8 @@ def execute(config):
       players = [PerfectInformationPlayer(i, weights[i], rules[i], get_noisy_q(q, noise_function, noise_delta), possible_predictions) for i in range(n)]
     elif player_type == "moving_range":
       players = [MovingRangePlayer(i, weights[i], rules[i], get_noisy_q(q, noise_function, noise_delta), possible_predictions, radius) for i in range(n)]
+    elif player_type == "moving_range_opt":
+      players = [MovingRangeOptimizedPlayer(i, weights[i], rules[i], get_noisy_q(q, noise_function, noise_delta), possible_predictions, radius) for i in range(n)]
 
     ps.append([player.p for player in players])
 
@@ -78,7 +80,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Run the prediction market simulation.")
 
   parser.add_argument("--n", type=int, required=True, help="Number of players")
-  parser.add_argument("--player_type", type=str, required=True, choices=["perfect", "moving_range"],
+  parser.add_argument("--player_type", type=str, required=True, choices=["perfect", "moving_range", "moving_range_opt"],
                       help="Type of player to instantiate")
   parser.add_argument("--rules", type=str, nargs='+', required=True, choices=["brier", "log", "quadratic"],
                       help="Valuation functions of players")
@@ -90,7 +92,7 @@ if __name__ == "__main__":
   parser.add_argument("--radius", type=int, help="Radius for MovingRangePlayer")
   args = parser.parse_args()
 
-  if args.player_type == "moving_range":
+  if args.player_type == "moving_range" or args.player_type == "moving_range_opt":
     if args.radius is None:
       parser.error("radius is required for this kind of player")
     config["radius"] = args.radius

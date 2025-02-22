@@ -1,5 +1,6 @@
 from .rules import calculateScore, f
 import time
+from concurrent.futures import ProcessPoolExecutor
 
 def simulate(players, q):
   predictions = [0 for _ in range(len(players))]

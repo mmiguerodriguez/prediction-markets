@@ -2,9 +2,12 @@ from abc import ABC, abstractmethod
 import math
 import numpy as np
 import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 from .rules import calculateScore, f
-class Player(ABC):
+
+
+class AbstractPlayer(ABC):
   def __init__(self, index, weight, rule, p, possiblePredictions):
     self.index = index
     self.weight = weight
@@ -23,6 +26,17 @@ class Player(ABC):
   def predict(self, players, predictions):
     pass
 
+class AbstractMovingRangePlayer(AbstractPlayer):
+  def getSubsetWithinRadius(self, radius):
+    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
+
+    start_index = max(0, closest_index - radius)
+    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
+
+    subset = self.possiblePredictions[start_index:end_index]
+
+    return subset
+
 """
 Jugador de Información Perfecta - de Tomás Schitter
 
@@ -31,7 +45,7 @@ y que conocen la verdadera probabilidad final del evento.
 
 Sigue la implementación de la tesis de Prediccion de Mercados de Tomás Schitter
 """
-class PerfectInformationPlayer(Player):
+class PerfectInformationPlayer(AbstractPlayer):
   def __init__(self, index, weight, rule, p, possiblePredictions):
     super().__init__(index, weight, rule, p, possiblePredictions)
 
@@ -75,20 +89,10 @@ y la comparamos con la puntuación máxima hasta el momento. Si es mayor, actual
 Si el jugador es el último, no necesitamos calcular la predicción del siguiente jugador, ya que no hay más jugadores después de él.
 En este caso, simplemente calculamos la puntuación para la predicción actual y la comparamos con la puntuación máxima hasta el momento.
 """
-class MovingRangePlayer(Player):
+class MovingRangePlayer(AbstractMovingRangePlayer):
   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
     super().__init__(index, weight, rule, p, possiblePredictions)
     self.subset = self.getSubsetWithinRadius(radius)
-
-  def getSubsetWithinRadius(self, radius):
-    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
-
-    start_index = max(0, closest_index - radius)
-    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
-
-    subset = self.possiblePredictions[start_index:end_index]
-
-    return subset
 
   def predict(self, players, predictions):
     n = len(players)
@@ -99,6 +103,8 @@ class MovingRangePlayer(Player):
     maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
     for prediction in self.possiblePredictions:
+      start_time = time.time()
+
       _predictions[self.index] = prediction
       finalPrediction = currentPrediction + (self.weight * prediction)
       currentScore = 0
@@ -127,29 +133,50 @@ class MovingRangePlayer(Player):
         maxScore = currentScore
         bestPrediction = prediction
 
+      if self.index == 0:
+        end_time = time.time()
+        execution_time = end_time - start_time
+        # print(f"{prediction} - prediction time: {execution_time:.2f} seconds")
+
     return bestPrediction
 
-class UpdatedBeliefsPlayer(Player):
+class MovingRangeOptimizedPlayer(AbstractMovingRangePlayer):
   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
     super().__init__(index, weight, rule, p, possiblePredictions)
     self.subset = self.getSubsetWithinRadius(radius)
 
-  def getCurrentPrediction(self, players, predictions):
+  def predict_single(self, prediction, players, _predictions, currentPrediction, n):
+    start_time  = time.time()
+
+    _predictions[self.index] = prediction
+    finalPrediction = currentPrediction + (self.weight * prediction)
+    currentScore = 0
+
+    if self.index != n - 1:
+      scores = {}
+      for subsetElem in self.subset:
+        finalPrediction = currentPrediction + (self.weight * prediction)  # reset finalPrediction
+
+        for j in range(self.index + 1, n):
+          original_p = players[j].p
+          players[j].p = subsetElem
+          otherPrediction = players[j].predict(players, _predictions) * players[j].weight
+          finalPrediction += otherPrediction
+          players[j].p = original_p
+
+        scores[subsetElem] = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+
+      maxSubsetElem = max(scores, key=scores.get)
+      currentScore = scores[maxSubsetElem]
+    else:
+      currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+
     if self.index == 0:
-      return 0
+      end_time = time.time()
+      execution_time = end_time - start_time
+      print(f"{prediction} - prediction time: {execution_time:.2f} seconds")
 
-    result = sum(predictions[i] * players[i].weight for i in range(self.index))
-    return result
-
-  def getSubsetWithinRadius(self, radius):
-    closest_index = np.argmin(np.abs(np.array(self.possiblePredictions) - self.p))
-
-    start_index = max(0, closest_index - radius)
-    end_index = min(len(self.possiblePredictions), closest_index + radius + 1)
-
-    subset = self.possiblePredictions[start_index:end_index]
-
-    return subset
+    return prediction, currentScore
 
   def predict(self, players, predictions):
     n = len(players)
@@ -159,36 +186,47 @@ class UpdatedBeliefsPlayer(Player):
     currentPrediction = self.getCurrentPrediction(players, _predictions)
     maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
 
-    for prediction in self.possiblePredictions:
-      _predictions[self.index] = prediction
-      finalPrediction = currentPrediction + (self.weight * prediction)
+    if self.index == 0 or self.index == 1:
+      executor = ProcessPoolExecutor()
+      batch_size = 10 if self.index == 0 else 20
+      for i in range(0, len(self.possiblePredictions), batch_size):
+        batch = self.possiblePredictions[i:i + batch_size]
+        futures = [
+          executor.submit(self.predict_single, prediction, players, _predictions, currentPrediction, n)
+          for prediction in batch
+        ]
 
-      currentScore = 0
-      if self.index != n - 1:
-        scores = {}
-        for subsetElem in self.subset:
-          for j in range(self.index + 1, n):
-            original_p = players[j].p
-            players[j].p = subsetElem 
-            otherPrediction = players[j].predict(players, _predictions) * players[j].weight
-            finalPrediction += otherPrediction
-            players[j].p = original_p
-          
-          scores[subsetElem] = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+        for future in as_completed(futures):
+          prediction, currentScore = future.result()
+          #print("processing future", future, prediction, currentScore, self.index)
+          if currentScore > maxScore:
+            maxScore = currentScore
+            bestPrediction = prediction
+      return bestPrediction
+    else:
+      for prediction in self.possiblePredictions:
+        prediction, currentScore = self.predict_single(prediction, players, _predictions, currentPrediction, n)
+        if currentScore > maxScore:
+          maxScore = currentScore
+          bestPrediction = prediction
 
-        maxSubsetElem = max(scores, key=scores.get)
-        currentScore = scores[maxSubsetElem]
-      else:
-        currentScore = calculateScore(prediction, f(finalPrediction, self.p), self.rule)
+      return bestPrediction
 
-      if currentScore > maxScore:
-        maxScore = currentScore
-        bestPrediction = prediction
+# class UpdatedBeliefsPlayer(AbstractMovingRangePlayer):
+#   def __init__(self, index, weight, rule, p, possiblePredictions, radius):
+#     super().__init__(index, weight, rule, p, possiblePredictions)
+#     self.subset = self.getSubsetWithinRadius(radius)
 
-      # if self.index == 0:
-      #   print(prediction)
+#   def predict(self, players, predictions):
+#     n = len(players)
+#     _predictions = predictions.copy()
+#     bestPrediction = 0
 
-    return bestPrediction
+#     currentPrediction = self.getCurrentPrediction(players, _predictions)
+#     maxScore = calculateScore(0, f(currentPrediction, self.p), self.rule)
+
+#     for prediction in self.possiblePredictions:
+#       pass
 
 def printFile(content):
   with open("out.txt", 'a') as file:

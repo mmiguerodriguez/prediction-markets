@@ -1,0 +1,13 @@
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.3333 0.3333 0.3333 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.25 0.25 0.5 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.2 0.2 0.6 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.1 0.1 0.8 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.05 0.05 0.9 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.25 0.5 0.25 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.2 0.6 0.2 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.1 0.8 0.1 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.05 0.9 0.05 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.5 0.25 0.25 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.6 0.2 0.2 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.8 0.1 0.1 --noise uniform --noise_delta 0.01 --radius 1
+python main.py --n 3 --player_type moving_range --rules brier brier brier --weights 0.9 0.05 0.05 --noise uniform --noise_delta 0.01 --radius 1
